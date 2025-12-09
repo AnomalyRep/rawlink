@@ -20,4 +20,32 @@ Line
 
 Write-Host "[1/5] Preparing installation..."
 New-Item $tempDir -ItemType Directory -Force | Out-Null
-New-Item $mcDir -ItemType Directory -Force |
+New-Item $mcDir -ItemType Directory -Force | Out-Null
+
+Write-Host "[2/5] Downloading mods pack..."
+$wc = New-Object System.Net.WebClient
+$wc.DownloadFile($zipUrl, $zipPath)
+
+Write-Host "[3/5] Backing up old mods folder..."
+if (Test-Path $modsDir) {
+    $backupDir = "$mcDir\mods_old_$timestamp"
+    Rename-Item $modsDir $backupDir
+    Write-Host "      Old mods moved to: mods_old_$timestamp"
+}
+
+New-Item $modsDir -ItemType Directory -Force | Out-Null
+
+Write-Host "[4/5] Extracting new mods..."
+Expand-Archive $zipPath -DestinationPath $tempDir -Force
+Copy-Item "$tempDir\mods\*" $modsDir -Recurse -Force
+
+Write-Host "[5/5] Cleaning up..."
+Remove-Item $tempDir -Recurse -Force
+
+Line
+Write-Host "INSTALLATION COMPLETE" -ForegroundColor Green
+Write-Host "Mods installed successfully."
+Write-Host "Old mods have been safely preserved."
+Line
+
+Pause
