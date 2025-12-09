@@ -1,27 +1,23 @@
-$zipUrl = "https://drive.usercontent.google.com/download?id=1U1F_5vZ0mauJJspzxO_q6XwOb8xlOi1T&export=download&confirm=t"
+Clear-Host
+$Host.UI.RawUI.WindowTitle = "Minecraft Mods Installer"
 
+# ================= CONFIG =================
+$zipUrl = "https://drive.usercontent.google.com/download?id=1U1F_5vZ0mauJJspzxO_q6XwOb8xlOi1T&export=download&confirm=t"
+$mcDir = "$env:APPDATA\.minecraft"
+$modsDir = "$mcDir\mods"
 $tempDir = "$env:TEMP\mc_mods_install"
 $zipPath = "$tempDir\mods.zip"
-$modsDir = "$env:APPDATA\.minecraft\mods"
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+# ========================================
 
-Write-Host "Preparing installation..."
+function Line {
+    Write-Host "----------------------------------------" -ForegroundColor DarkGray
+}
 
+Line
+Write-Host " Minecraft Mods Installer" -ForegroundColor Cyan
+Line
+
+Write-Host "[1/5] Preparing installation..."
 New-Item $tempDir -ItemType Directory -Force | Out-Null
-New-Item $modsDir -ItemType Directory -Force | Out-Null
-
-Write-Host "Downloading mods pack..."
-$wc = New-Object System.Net.WebClient
-$wc.DownloadFile($zipUrl, $zipPath)
-
-Write-Host "Extracting mods..."
-Expand-Archive $zipPath -DestinationPath $tempDir -Force
-
-Write-Host "Installing mods..."
-Copy-Item "$tempDir\mods\*" $modsDir -Recurse -Force
-
-Write-Host "Cleaning up..."
-Remove-Item $tempDir -Recurse -Force
-
-Write-Host "✅ Mods installed successfully!"
-Pause
-
+New-Item $mcDir -ItemType Directory -Force |
