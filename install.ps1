@@ -1,26 +1,27 @@
-$zipUrl = "https://drive.usercontent.google.com/download?id=1U1F_5vZ0mauJJspzxO_q6XwOb8xlOi1T&export=download&authuser=0&confirm=t&uuid=19b04677-97e2-4e5c-b280-7f254df00e9e&at=ALWLOp5TXK_EoWWjeUqzXcMdkQG_%3A1765317952324"
+$zipUrl = "https://drive.usercontent.google.com/download?id=1U1F_5vZ0mauJJspzxO_q6XwOb8xlOi1T&export=download&confirm=t"
 
 $tempDir = "$env:TEMP\mc_mods_install"
 $zipPath = "$tempDir\mods.zip"
-$mcModsDir = "$env:APPDATA\.minecraft\mods"
+$modsDir = "$env:APPDATA\.minecraft\mods"
 
-# Prepare temp
+Write-Host "Preparing installation..."
+
 New-Item $tempDir -ItemType Directory -Force | Out-Null
+New-Item $modsDir -ItemType Directory -Force | Out-Null
 
-# Download zip
-Invoke-WebRequest $zipUrl -OutFile $zipPath
+Write-Host "Downloading mods pack..."
+$wc = New-Object System.Net.WebClient
+$wc.DownloadFile($zipUrl, $zipPath)
 
-# Ensure mods dir exists
-New-Item $mcModsDir -ItemType Directory -Force | Out-Null
-
-# Extract
+Write-Host "Extracting mods..."
 Expand-Archive $zipPath -DestinationPath $tempDir -Force
 
-# Copy mods
-Copy-Item "$tempDir\mods\*" $mcModsDir -Recurse -Force
+Write-Host "Installing mods..."
+Copy-Item "$tempDir\mods\*" $modsDir -Recurse -Force
 
-# Cleanup
+Write-Host "Cleaning up..."
 Remove-Item $tempDir -Recurse -Force
 
 Write-Host "✅ Mods installed successfully!"
 Pause
+
