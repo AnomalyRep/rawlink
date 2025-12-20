@@ -2,7 +2,7 @@ Clear-Host
 $Host.UI.RawUI.WindowTitle = "Minecraft Mods Installer"
 
 # ================= CONFIG =================
-$zipUrl = "https://drive.usercontent.google.com/download?id=1n5cU9-IUuN8C55cnxDyXgYbtWTk5ewMO&export=download&authuser=0&confirm=t&uuid=6bd9e3a3-05c0-4095-8c8d-17a90d305fb4&at=ANTm3cyPvKJ1e1YZzsCeQxW4PD-H%3A1766242367865"
+$zipUrl = "https://drive.usercontent.google.com/download?id=1eanzn3tZ5CVnPwsDs5KBt-pmoLrgMCZN&export=download&authuser=0&confirm=t&uuid=c11e27d6-a927-43dc-9b4a-79ca8885107c&at=ANTm3cwE3E-KlKCBgUYqWDSClt77%3A1766242765325"
 $mcDir = "$env:APPDATA\.minecraft"
 $modsDir = "$mcDir\mods"
 $tempDir = "$env:TEMP\mc_mods_install"
@@ -67,3 +67,4 @@ Write-Host "Mods installed successfully."
 Write-Host "Old mods have been safely preserved."
 Line
 Pause
+
