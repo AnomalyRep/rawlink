@@ -58,7 +58,7 @@ $form.Controls.Add($subtitleLabel)
 $creditsLabel = New-Object System.Windows.Forms.Label
 $creditsLabel.Location = New-Object System.Drawing.Point(10, 100)
 $creditsLabel.Size = New-Object System.Drawing.Size(560, 60)
-$creditsLabel.Text = "Dipersembahkan untuk:`nArvin (The Installer) • Bang Abi • Bang Dendra"
+$creditsLabel.Text = "Dipersembahkan untuk:`nArvin (The Installer) / Bang Abi / Bang Dendra"
 $creditsLabel.TextAlign = "MiddleCenter"
 $creditsLabel.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $creditsLabel.ForeColor = [System.Drawing.Color]::Cyan
@@ -167,14 +167,14 @@ $form.Add_Shown({
     New-Item $mcDir -ItemType Directory -Force | Out-Null
     New-Item $configDir -ItemType Directory -Force | Out-Null
     New-Item $shadersDir -ItemType Directory -Force | Out-Null
-    Update-Progress 10 "[1/9] Folder siap!" "✓ Folder berhasil dibuat"
+    Update-Progress 10 "[1/9] Folder siap!" "[OK] Folder berhasil dibuat"
     
     # Step 2: Download Fabric
     Update-Progress 15 "[2/9] Download Fabric Installer..." "Mendownload Fabric Installer..."
     try {
         $wc = New-Object System.Net.WebClient
         $wc.DownloadFile($fabricInstallerUrl, $fabricInstaller)
-        Update-Progress 20 "[2/9] Fabric downloaded!" "✓ Fabric Installer berhasil didownload"
+        Update-Progress 20 "[2/9] Fabric downloaded!" "[OK] Fabric Installer berhasil didownload"
     } catch {
         Update-Progress 20 "ERROR!" "✗ Gagal download Fabric: $_"
         [System.Windows.Forms.MessageBox]::Show("Gagal download Fabric Installer!", "Error", 0, 16)
@@ -194,13 +194,13 @@ $form.Add_Shown({
     )
     
     Start-Process -FilePath $fabricInstaller -Wait
-    Update-Progress 35 "[3/9] Fabric installed!" "✓ Fabric Loader berhasil terinstall"
+    Update-Progress 35 "[3/9] Fabric installed!" "[OK] Fabric Loader berhasil terinstall"
     
     # Step 4: Download mods
     Update-Progress 40 "[4/9] Download mods pack..." "Mendownload mods pack..."
     try {
         $wc.DownloadFile($modsUrl, $modsZip)
-        Update-Progress 45 "[4/9] Mods downloaded!" "✓ Mods pack berhasil didownload"
+        Update-Progress 45 "[4/9] Mods downloaded!" "[OK] Mods pack berhasil didownload"
     } catch {
         Update-Progress 45 "ERROR!" "✗ Gagal download mods: $_"
     }
@@ -210,7 +210,7 @@ $form.Add_Shown({
     if (Test-Path $modsDir) {
         $backupModsDir = "$mcDir\mods_backup_$timestamp"
         Rename-Item $modsDir $backupModsDir
-        Update-Progress 50 "[5/9] Backup selesai" "✓ Mods lama di-backup: mods_backup_$timestamp"
+        Update-Progress 50 "[5/9] Backup selesai" "[OK] Mods lama di-backup: mods_backup_$timestamp"
     }
     New-Item $modsDir -ItemType Directory -Force | Out-Null
     
@@ -222,12 +222,12 @@ $form.Add_Shown({
         if (Test-Path "$tempDir\mods_extract\mods") {
             Copy-Item "$tempDir\mods_extract\mods\*" $modsDir -Recurse -Force
             $modCount = (Get-ChildItem $modsDir -Filter "*.jar").Count
-            Update-Progress 58 "[6/9] Mods installed!" "✓ Berhasil install $modCount mods"
+            Update-Progress 58 "[6/9] Mods installed!" "[OK] Berhasil install $modCount mods"
         } else {
             $jarFiles = Get-ChildItem -Path "$tempDir\mods_extract" -Filter "*.jar" -Recurse
             if ($jarFiles.Count -gt 0) {
                 $jarFiles | ForEach-Object { Copy-Item $_.FullName $modsDir -Force }
-                Update-Progress 58 "[6/9] Mods installed!" "✓ Berhasil copy $($jarFiles.Count) mods"
+                Update-Progress 58 "[6/9] Mods installed!" "[OK] Berhasil copy $($jarFiles.Count) mods"
             }
         }
     } catch {
@@ -244,23 +244,23 @@ $form.Add_Shown({
         New-Item $backupShadersDir -ItemType Directory -Force | Out-Null
         Copy-Item "$shadersDir\*" $backupShadersDir -Recurse -Force
         Get-ChildItem $shadersDir | Remove-Item -Recurse -Force
-        Update-Progress 62 "[7/9] Backup selesai" "✓ Shaderpacks lama di-backup"
+        Update-Progress 62 "[7/9] Backup selesai" "[OK] Shaderpacks lama di-backup"
     }
     
     # Step 8: Download shaderpacks
     Update-Progress 65 "[8/9] Download shaderpacks (1/4)..." "Downloading BSL Shaders..."
     try {
         $wc.DownloadFile($shader1Url, "$shadersDir\BSL_v10.0.zip")
-        Update-Progress 70 "[8/9] BSL installed (2/4)..." "✓ BSL Shaders installed"
+        Update-Progress 70 "[8/9] BSL installed (2/4)..." "[OK] BSL Shaders installed"
         
         $wc.DownloadFile($shader2Url, "$shadersDir\Bliss_v2.1.2_-Chocapic13_Shaders_edit.zip")
-        Update-Progress 75 "[8/9] Bliss installed (3/4)..." "✓ Bliss Shaders installed"
+        Update-Progress 75 "[8/9] Bliss installed (3/4)..." "[OK] Bliss Shaders installed"
         
         $wc.DownloadFile($shader3Url, "$shadersDir\ComplementaryReimagined_r5.6.1.zip")
-        Update-Progress 82 "[8/9] Complementary R (4/4)..." "✓ Complementary Reimagined installed"
+        Update-Progress 82 "[8/9] Complementary R (4/4)..." "[OK] Complementary Reimagined installed"
         
         $wc.DownloadFile($shader4Url, "$shadersDir\ComplementaryUnbound_r5.6.1.zip")
-        Update-Progress 90 "[8/9] All shaders installed!" "✓ Complementary Unbound installed"
+        Update-Progress 90 "[8/9] All shaders installed!" "[OK] Complementary Unbound installed"
     } catch {
         Update-Progress 90 "ERROR shaders" "✗ Gagal download shader: $_"
     }
@@ -274,7 +274,7 @@ $form.Add_Shown({
 "@
     try {
         Set-Content -Path $customBrandFile -Value $customBrandJson -Encoding UTF8
-        Update-Progress 97 "[9/9] Custom brand created!" "✓ Custom brand 'acumalaka' aktif"
+        Update-Progress 97 "[9/9] Custom brand created!" "[OK] Custom brand 'acumalaka' aktif"
     } catch {
         Update-Progress 97 "WARNING" "⚠ Gagal membuat custom brand"
     }
@@ -284,7 +284,7 @@ $form.Add_Shown({
     Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
     
     # Complete
-    Update-Progress 100 "INSTALASI SELESAI!" "✓ Semua proses selesai!"
+    Update-Progress 100 "INSTALASI SELESAI!" "[OK] Semua proses selesai!"
     Show-Completion
 })
 
