@@ -1,5 +1,7 @@
-Clear-Host
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
+Clear-Host
 $Host.UI.RawUI.WindowTitle = "Installer Mods & Shaderpack Minecraft"
 
 # ================= CONFIG =================
@@ -7,7 +9,6 @@ $modsUrl = "https://www.dropbox.com/scl/fi/b1shthyisxpnn0jk2krro/mods.zip?rlkey=
 $fabricInstallerUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.0/fabric-installer-1.1.0.exe"
 $serverIP = "premium-3.alstore.space:20042"
 
-# Shader URLs
 $shader1Url = "https://www.dropbox.com/scl/fi/iayox9kc7iuu4m7d3fqln/BSL_v10.0.zip?rlkey=h7ch0xclvuvy6cd4jma47qztw&st=lxv5da17&dl=1"
 $shader2Url = "https://www.dropbox.com/scl/fi/qok4mgnyvskjf2a2n1qv1/Bliss_v2.1.2_-Chocapic13_Shaders_edit.zip?rlkey=tvwtvq53qbwqi5jq8krooml3m&st=jnx8u7mv&dl=1"
 $shader3Url = "https://www.dropbox.com/scl/fi/6jfxn10zwf7bfxppoltve/ComplementaryReimagined_r5.6.1.zip?rlkey=tj7x5c33sdns8fgjav771r808&st=7szkr8i3&dl=1"
@@ -24,242 +25,268 @@ $fabricInstaller = "$tempDir\fabric-installer.exe"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 # ========================================
 
-function Line {
-    Write-Host "==========================================" -ForegroundColor DarkGray
-}
+# ================= GUI SETUP =================
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Minecraft Installer - Server Private Edition"
+$form.Size = New-Object System.Drawing.Size(600, 550)
+$form.StartPosition = "CenterScreen"
+$form.FormBorderStyle = "FixedDialog"
+$form.MaximizeBox = $false
+$form.BackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
 
-function DoubleLine {
-    Write-Host "==========================================" -ForegroundColor Cyan
-}
+# Title Label
+$titleLabel = New-Object System.Windows.Forms.Label
+$titleLabel.Location = New-Object System.Drawing.Point(10, 10)
+$titleLabel.Size = New-Object System.Drawing.Size(560, 60)
+$titleLabel.Text = "INSTALLER MODS & SHADERPACK`nMINECRAFT 1.21.11"
+$titleLabel.TextAlign = "MiddleCenter"
+$titleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
+$titleLabel.ForeColor = [System.Drawing.Color]::White
+$form.Controls.Add($titleLabel)
 
-function TripleLine {
-    Write-Host "==========================================" -ForegroundColor Yellow
-}
+# Subtitle
+$subtitleLabel = New-Object System.Windows.Forms.Label
+$subtitleLabel.Location = New-Object System.Drawing.Point(10, 70)
+$subtitleLabel.Size = New-Object System.Drawing.Size(560, 25)
+$subtitleLabel.Text = "Server Private Edition"
+$subtitleLabel.TextAlign = "MiddleCenter"
+$subtitleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+$subtitleLabel.ForeColor = [System.Drawing.Color]::Gold
+$form.Controls.Add($subtitleLabel)
 
-DoubleLine
-Write-Host "                                           " -BackgroundColor DarkBlue
-Write-Host "  INSTALLER MODS & SHADERPACK MC 1.21.11  " -ForegroundColor White -BackgroundColor DarkBlue
-Write-Host "          Server Private Edition          " -ForegroundColor Yellow -BackgroundColor DarkBlue
-Write-Host "                                           " -BackgroundColor DarkBlue
-DoubleLine
-Write-Host ""
-Write-Host "  Dipersembahkan untuk:" -ForegroundColor Magenta
-Write-Host "    [*] Arvin (The Installer)" -ForegroundColor Cyan
-Write-Host "    [*] Bang Abi" -ForegroundColor Cyan
-Write-Host "    [*] Bang Dendra" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "  Selamat bermain di server private kami!" -ForegroundColor Yellow
-Line
+# Credits
+$creditsLabel = New-Object System.Windows.Forms.Label
+$creditsLabel.Location = New-Object System.Drawing.Point(10, 100)
+$creditsLabel.Size = New-Object System.Drawing.Size(560, 60)
+$creditsLabel.Text = "Dipersembahkan untuk:`nArvin (The Installer) • Bang Abi • Bang Dendra"
+$creditsLabel.TextAlign = "MiddleCenter"
+$creditsLabel.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$creditsLabel.ForeColor = [System.Drawing.Color]::Cyan
+$form.Controls.Add($creditsLabel)
 
-Write-Host "[1/9] Nyiapin folder..." -ForegroundColor White
-if (Test-Path $tempDir) {
-    Remove-Item $tempDir -Recurse -Force
-}
-New-Item $tempDir -ItemType Directory -Force | Out-Null
-New-Item $mcDir -ItemType Directory -Force | Out-Null
-New-Item $configDir -ItemType Directory -Force | Out-Null
-New-Item $shadersDir -ItemType Directory -Force | Out-Null
-Write-Host "      Siap bos!" -ForegroundColor Green
+# Progress Bar
+$progressBar = New-Object System.Windows.Forms.ProgressBar
+$progressBar.Location = New-Object System.Drawing.Point(30, 180)
+$progressBar.Size = New-Object System.Drawing.Size(520, 30)
+$progressBar.Style = "Continuous"
+$form.Controls.Add($progressBar)
 
-Write-Host "[2/9] Nge-download Fabric Installer..." -ForegroundColor White
-try {
-    $wc = New-Object System.Net.WebClient
-    $wc.DownloadFile($fabricInstallerUrl, $fabricInstaller)
-    Write-Host "      Fabric Installer udah ke-download!" -ForegroundColor Green
-} catch {
-    Write-Host "      ERROR: Gagal download Fabric Installer!" -ForegroundColor Red
-    Write-Host "      $_" -ForegroundColor Red
-    Pause
-    exit
-}
+# Status Label
+$statusLabel = New-Object System.Windows.Forms.Label
+$statusLabel.Location = New-Object System.Drawing.Point(30, 220)
+$statusLabel.Size = New-Object System.Drawing.Size(520, 25)
+$statusLabel.Text = "Menunggu..."
+$statusLabel.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+$statusLabel.ForeColor = [System.Drawing.Color]::LightGreen
+$form.Controls.Add($statusLabel)
 
-Write-Host "[3/9] Jalanin Fabric Installer..." -ForegroundColor White
-Write-Host ""
-Write-Host "      ========================================" -ForegroundColor Yellow
-Write-Host "        PENTING! Window installer muncul     " -ForegroundColor Yellow
-Write-Host "      ========================================" -ForegroundColor Yellow
-Write-Host "        1. Pilih version: 1.21.11            " -ForegroundColor Cyan
-Write-Host "        2. Klik 'Install'                    " -ForegroundColor Cyan
-Write-Host "        3. Tunggu sampai selesai             " -ForegroundColor Cyan
-Write-Host "      ========================================" -ForegroundColor Yellow
-Write-Host ""
-Start-Process -FilePath $fabricInstaller -Wait
-Write-Host "      Fabric Installer selesai!" -ForegroundColor Green
+# Log TextBox
+$logBox = New-Object System.Windows.Forms.TextBox
+$logBox.Location = New-Object System.Drawing.Point(30, 255)
+$logBox.Size = New-Object System.Drawing.Size(520, 180)
+$logBox.Multiline = $true
+$logBox.ScrollBars = "Vertical"
+$logBox.ReadOnly = $true
+$logBox.BackColor = [System.Drawing.Color]::FromArgb(20, 20, 20)
+$logBox.ForeColor = [System.Drawing.Color]::LightGray
+$logBox.Font = New-Object System.Drawing.Font("Consolas", 9)
+$form.Controls.Add($logBox)
 
-Write-Host "[4/9] Nge-download mods pack..." -ForegroundColor White
-try {
-    $wc.DownloadFile($modsUrl, $modsZip)
-    Write-Host "      Mods udah ke-download!" -ForegroundColor Green
-} catch {
-    Write-Host "      ERROR: Gagal download mods!" -ForegroundColor Red
-    Write-Host "      $_" -ForegroundColor Red
-    Pause
-    exit
-}
+# Close Button (Hidden initially)
+$closeButton = New-Object System.Windows.Forms.Button
+$closeButton.Location = New-Object System.Drawing.Point(230, 450)
+$closeButton.Size = New-Object System.Drawing.Size(120, 35)
+$closeButton.Text = "Tutup"
+$closeButton.BackColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
+$closeButton.ForeColor = [System.Drawing.Color]::White
+$closeButton.FlatStyle = "Flat"
+$closeButton.Enabled = $false
+$closeButton.Visible = $false
+$closeButton.Add_Click({ $form.Close() })
+$form.Controls.Add($closeButton)
 
-Write-Host "[5/9] Backup mods lama dulu..." -ForegroundColor White
-if (Test-Path $modsDir) {
-    $backupModsDir = "$mcDir\mods_backup_$timestamp"
-    Rename-Item $modsDir $backupModsDir
-    Write-Host "      Mods lama dipindahin ke: mods_backup_$timestamp" -ForegroundColor Yellow
-}
-New-Item $modsDir -ItemType Directory -Force | Out-Null
-
-Write-Host "[6/9] Extract & install mods..." -ForegroundColor White
-try {
-    Expand-Archive $modsZip -DestinationPath "$tempDir\mods_extract" -Force
-    
-    if (Test-Path "$tempDir\mods_extract\mods") {
-        Copy-Item "$tempDir\mods_extract\mods\*" $modsDir -Recurse -Force
-        $modCount = (Get-ChildItem $modsDir -Filter "*.jar").Count
-        Write-Host "      Berhasil install $modCount mods!" -ForegroundColor Cyan
-    } else {
-        $jarFiles = Get-ChildItem -Path "$tempDir\mods_extract" -Filter "*.jar" -Recurse
-        if ($jarFiles.Count -gt 0) {
-            $jarFiles | ForEach-Object {
-                Copy-Item $_.FullName $modsDir -Force
-            }
-            Write-Host "      Berhasil copy $($jarFiles.Count) file mod" -ForegroundColor Cyan
-        } else {
-            Write-Host "      PERHATIAN: Gak nemu file .jar di ZIP!" -ForegroundColor Red
-        }
+# ================= FUNCTIONS =================
+function Update-Progress {
+    param($percent, $status, $log)
+    $progressBar.Value = $percent
+    $statusLabel.Text = $status
+    if ($log) {
+        $logBox.AppendText("$log`r`n")
+        $logBox.SelectionStart = $logBox.Text.Length
+        $logBox.ScrollToCaret()
     }
-} catch {
-    Write-Host "      ERROR: Gagal extract mods!" -ForegroundColor Red
-    Write-Host "      $_" -ForegroundColor Red
+    $form.Refresh()
+    [System.Windows.Forms.Application]::DoEvents()
 }
 
-Write-Host "      Bersihin sisa file mods..." -ForegroundColor DarkGray
-Remove-Item "$tempDir\mods_extract" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item $modsZip -Force -ErrorAction SilentlyContinue
-
-Write-Host "[7/9] Backup shaderpack lama..." -ForegroundColor White
-if ((Test-Path $shadersDir) -and ((Get-ChildItem $shadersDir).Count -gt 0)) {
-    $backupShadersDir = "$mcDir\shaderpacks_backup_$timestamp"
-    New-Item $backupShadersDir -ItemType Directory -Force | Out-Null
-    Copy-Item "$shadersDir\*" $backupShadersDir -Recurse -Force
-    Write-Host "      Shaderpack lama di-backup ke: shaderpacks_backup_$timestamp" -ForegroundColor Yellow
-    # Hapus isi folder shaderpacks (tapi gak hapus foldernya)
-    Get-ChildItem $shadersDir | Remove-Item -Recurse -Force
+function Show-Completion {
+    $statusLabel.Text = "INSTALASI SELESAI!"
+    $statusLabel.ForeColor = [System.Drawing.Color]::LimeGreen
+    
+    $logBox.AppendText("`r`n========================================`r`n")
+    $logBox.AppendText("       INSTALASI BERHASIL!`r`n")
+    $logBox.AppendText("========================================`r`n")
+    $logBox.AppendText("[OK] Fabric Loader 1.21.11 terinstall`r`n")
+    $logBox.AppendText("[OK] Mods terinstall`r`n")
+    $logBox.AppendText("[OK] 4 Shaderpacks terinstall`r`n")
+    $logBox.AppendText("[OK] Custom brand 'acumalaka' aktif`r`n")
+    $logBox.AppendText("`r`n========================================`r`n")
+    $logBox.AppendText("CARA MAIN DI SERVER:`r`n")
+    $logBox.AppendText("1. Buka Minecraft Launcher`r`n")
+    $logBox.AppendText("2. Pilih: fabric-loader-1.21.11`r`n")
+    $logBox.AppendText("3. Masuk Multiplayer`r`n")
+    $logBox.AppendText("4. Add Server: $serverIP`r`n")
+    $logBox.AppendText("========================================`r`n")
+    $logBox.AppendText("`r`nIP sudah di-copy ke clipboard!`r`n")
+    $logBox.AppendText("Tinggal paste (Ctrl+V) di Minecraft`r`n")
+    
+    $closeButton.Enabled = $true
+    $closeButton.Visible = $true
+    
+    try {
+        Set-Clipboard -Value $serverIP
+    } catch {}
+    
+    [System.Windows.Forms.MessageBox]::Show(
+        "Instalasi selesai!`n`nIP Server: $serverIP`n(Sudah di-copy ke clipboard)`n`nSelamat bermain!",
+        "Instalasi Berhasil",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+    )
 }
 
-Write-Host "[8/9] Download & install 4 shaderpacks..." -ForegroundColor White
-
-try {
-    Write-Host "      [1/4] BSL Shaders v10.0..." -ForegroundColor Cyan
-    $shader1File = "$shadersDir\BSL_v10.0.zip"
-    $wc.DownloadFile($shader1Url, $shader1File)
-    Write-Host "            [OK] BSL installed!" -ForegroundColor Green
-
-    Write-Host "      [2/4] Bliss v2.1.2 Chocapic13..." -ForegroundColor Cyan
-    $shader2File = "$shadersDir\Bliss_v2.1.2_-Chocapic13_Shaders_edit.zip"
-    $wc.DownloadFile($shader2Url, $shader2File)
-    Write-Host "            [OK] Bliss installed!" -ForegroundColor Green
-
-    Write-Host "      [3/4] Complementary Reimagined r5.6.1..." -ForegroundColor Cyan
-    $shader3File = "$shadersDir\ComplementaryReimagined_r5.6.1.zip"
-    $wc.DownloadFile($shader3Url, $shader3File)
-    Write-Host "            [OK] Complementary Reimagined installed!" -ForegroundColor Green
-
-    Write-Host "      [4/4] Complementary Unbound r5.6.1..." -ForegroundColor Cyan
-    $shader4File = "$shadersDir\ComplementaryUnbound_r5.6.1.zip"
-    $wc.DownloadFile($shader4Url, $shader4File)
-    Write-Host "            [OK] Complementary Unbound installed!" -ForegroundColor Green
-
-    Write-Host ""
-    Write-Host "      Total 4 shaderpacks berhasil di-install!" -ForegroundColor Green
-} catch {
-    Write-Host "      ERROR: Gagal download shaderpack!" -ForegroundColor Red
-    Write-Host "      $_" -ForegroundColor Red
-}
-
-Write-Host "[9/9] Bikin custom client brand..." -ForegroundColor White
-$customBrandJson = @"
+# ================= INSTALLATION PROCESS =================
+$form.Add_Shown({
+    Update-Progress 0 "Memulai instalasi..." "Installer dimulai..."
+    Start-Sleep -Milliseconds 500
+    
+    # Step 1: Setup folders
+    Update-Progress 5 "[1/9] Menyiapkan folder..." "Membuat folder yang diperlukan..."
+    if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
+    New-Item $tempDir -ItemType Directory -Force | Out-Null
+    New-Item $mcDir -ItemType Directory -Force | Out-Null
+    New-Item $configDir -ItemType Directory -Force | Out-Null
+    New-Item $shadersDir -ItemType Directory -Force | Out-Null
+    Update-Progress 10 "[1/9] Folder siap!" "✓ Folder berhasil dibuat"
+    
+    # Step 2: Download Fabric
+    Update-Progress 15 "[2/9] Download Fabric Installer..." "Mendownload Fabric Installer..."
+    try {
+        $wc = New-Object System.Net.WebClient
+        $wc.DownloadFile($fabricInstallerUrl, $fabricInstaller)
+        Update-Progress 20 "[2/9] Fabric downloaded!" "✓ Fabric Installer berhasil didownload"
+    } catch {
+        Update-Progress 20 "ERROR!" "✗ Gagal download Fabric: $_"
+        [System.Windows.Forms.MessageBox]::Show("Gagal download Fabric Installer!", "Error", 0, 16)
+        $form.Close()
+        return
+    }
+    
+    # Step 3: Run Fabric Installer
+    Update-Progress 25 "[3/9] Jalankan Fabric Installer..." "Membuka Fabric Installer..."
+    Update-Progress 25 "[3/9] TUNGGU!" "PENTING: Pilih version 1.21.11 dan klik Install!"
+    
+    [System.Windows.Forms.MessageBox]::Show(
+        "Window Fabric Installer akan muncul.`n`n1. Pilih version: 1.21.11`n2. Klik 'Install'`n3. Tunggu sampai selesai",
+        "Perhatian",
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Information
+    )
+    
+    Start-Process -FilePath $fabricInstaller -Wait
+    Update-Progress 35 "[3/9] Fabric installed!" "✓ Fabric Loader berhasil terinstall"
+    
+    # Step 4: Download mods
+    Update-Progress 40 "[4/9] Download mods pack..." "Mendownload mods pack..."
+    try {
+        $wc.DownloadFile($modsUrl, $modsZip)
+        Update-Progress 45 "[4/9] Mods downloaded!" "✓ Mods pack berhasil didownload"
+    } catch {
+        Update-Progress 45 "ERROR!" "✗ Gagal download mods: $_"
+    }
+    
+    # Step 5: Backup old mods
+    Update-Progress 48 "[5/9] Backup mods lama..." "Membackup mods lama..."
+    if (Test-Path $modsDir) {
+        $backupModsDir = "$mcDir\mods_backup_$timestamp"
+        Rename-Item $modsDir $backupModsDir
+        Update-Progress 50 "[5/9] Backup selesai" "✓ Mods lama di-backup: mods_backup_$timestamp"
+    }
+    New-Item $modsDir -ItemType Directory -Force | Out-Null
+    
+    # Step 6: Extract & install mods
+    Update-Progress 52 "[6/9] Extract & install mods..." "Mengekstrak mods..."
+    try {
+        Expand-Archive $modsZip -DestinationPath "$tempDir\mods_extract" -Force
+        
+        if (Test-Path "$tempDir\mods_extract\mods") {
+            Copy-Item "$tempDir\mods_extract\mods\*" $modsDir -Recurse -Force
+            $modCount = (Get-ChildItem $modsDir -Filter "*.jar").Count
+            Update-Progress 58 "[6/9] Mods installed!" "✓ Berhasil install $modCount mods"
+        } else {
+            $jarFiles = Get-ChildItem -Path "$tempDir\mods_extract" -Filter "*.jar" -Recurse
+            if ($jarFiles.Count -gt 0) {
+                $jarFiles | ForEach-Object { Copy-Item $_.FullName $modsDir -Force }
+                Update-Progress 58 "[6/9] Mods installed!" "✓ Berhasil copy $($jarFiles.Count) mods"
+            }
+        }
+    } catch {
+        Update-Progress 58 "ERROR mods" "✗ Gagal extract mods: $_"
+    }
+    
+    Remove-Item "$tempDir\mods_extract" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item $modsZip -Force -ErrorAction SilentlyContinue
+    
+    # Step 7: Backup shaderpacks
+    Update-Progress 60 "[7/9] Backup shaderpacks lama..." "Membackup shaderpacks lama..."
+    if ((Test-Path $shadersDir) -and ((Get-ChildItem $shadersDir).Count -gt 0)) {
+        $backupShadersDir = "$mcDir\shaderpacks_backup_$timestamp"
+        New-Item $backupShadersDir -ItemType Directory -Force | Out-Null
+        Copy-Item "$shadersDir\*" $backupShadersDir -Recurse -Force
+        Get-ChildItem $shadersDir | Remove-Item -Recurse -Force
+        Update-Progress 62 "[7/9] Backup selesai" "✓ Shaderpacks lama di-backup"
+    }
+    
+    # Step 8: Download shaderpacks
+    Update-Progress 65 "[8/9] Download shaderpacks (1/4)..." "Downloading BSL Shaders..."
+    try {
+        $wc.DownloadFile($shader1Url, "$shadersDir\BSL_v10.0.zip")
+        Update-Progress 70 "[8/9] BSL installed (2/4)..." "✓ BSL Shaders installed"
+        
+        $wc.DownloadFile($shader2Url, "$shadersDir\Bliss_v2.1.2_-Chocapic13_Shaders_edit.zip")
+        Update-Progress 75 "[8/9] Bliss installed (3/4)..." "✓ Bliss Shaders installed"
+        
+        $wc.DownloadFile($shader3Url, "$shadersDir\ComplementaryReimagined_r5.6.1.zip")
+        Update-Progress 82 "[8/9] Complementary R (4/4)..." "✓ Complementary Reimagined installed"
+        
+        $wc.DownloadFile($shader4Url, "$shadersDir\ComplementaryUnbound_r5.6.1.zip")
+        Update-Progress 90 "[8/9] All shaders installed!" "✓ Complementary Unbound installed"
+    } catch {
+        Update-Progress 90 "ERROR shaders" "✗ Gagal download shader: $_"
+    }
+    
+    # Step 9: Custom brand
+    Update-Progress 93 "[9/9] Setup custom brand..." "Membuat custom client brand..."
+    $customBrandJson = @"
 {
   "customBrand": "acumalaka"
 }
 "@
-try {
-    Set-Content -Path $customBrandFile -Value $customBrandJson -Encoding UTF8
-    Write-Host "      File customclientbrand.json udah dibuat!" -ForegroundColor Green
-} catch {
-    Write-Host "      WARNING: Gagal bikin custom brand file" -ForegroundColor Yellow
-}
+    try {
+        Set-Content -Path $customBrandFile -Value $customBrandJson -Encoding UTF8
+        Update-Progress 97 "[9/9] Custom brand created!" "✓ Custom brand 'acumalaka' aktif"
+    } catch {
+        Update-Progress 97 "WARNING" "⚠ Gagal membuat custom brand"
+    }
+    
+    # Cleanup
+    Update-Progress 98 "Membersihkan file temporary..." "Cleaning up..."
+    Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+    
+    # Complete
+    Update-Progress 100 "INSTALASI SELESAI!" "✓ Semua proses selesai!"
+    Show-Completion
+})
 
-Write-Host ""
-Write-Host "Bersihin sampah..." -ForegroundColor DarkGray
-Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-Write-Host "Beres!" -ForegroundColor Green
-
-Line
-Write-Host ""
-Write-Host "  =========================================" -ForegroundColor Green
-Write-Host "       INSTALASI SELESAI! [OK]            " -ForegroundColor Green
-Write-Host "  =========================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "  [OK] Fabric Loader 1.21.11 terinstall" -ForegroundColor Cyan
-Write-Host "  [OK] Mods terinstall" -ForegroundColor Cyan
-Write-Host "  [OK] 4 Shaderpacks terinstall:" -ForegroundColor Cyan
-Write-Host "      - BSL v10.0" -ForegroundColor DarkGray
-Write-Host "      - Bliss v2.1.2" -ForegroundColor DarkGray
-Write-Host "      - Complementary Reimagined r5.6.1" -ForegroundColor DarkGray
-Write-Host "      - Complementary Unbound r5.6.1" -ForegroundColor DarkGray
-Write-Host "  [OK] Custom brand 'acumalaka' aktif" -ForegroundColor Cyan
-Write-Host "  [OK] File lama sudah di-backup" -ForegroundColor Cyan
-Write-Host ""
-Line
-
-Write-Host ""
-TripleLine
-Write-Host "  =========================================" -ForegroundColor Yellow
-Write-Host "        CARA MAIN DI SERVER               " -ForegroundColor Yellow
-Write-Host "  =========================================" -ForegroundColor Yellow
-TripleLine
-Write-Host ""
-Write-Host "  [1] Buka Minecraft Launcher" -ForegroundColor White
-Write-Host "  [2] Pilih profile: " -NoNewline -ForegroundColor White
-Write-Host "fabric-loader-1.21.11" -ForegroundColor Green
-Write-Host "  [3] Klik Play dan tunggu loading" -ForegroundColor White
-Write-Host "  [4] Masuk ke Multiplayer" -ForegroundColor White
-Write-Host "  [5] Klik 'Add Server'" -ForegroundColor White
-Write-Host "  [6] Masukin IP server:" -ForegroundColor White
-Write-Host ""
-Write-Host "      ====================================" -ForegroundColor Cyan
-Write-Host "        " -NoNewline -ForegroundColor Cyan
-Write-Host "$serverIP" -NoNewline -ForegroundColor Green -BackgroundColor Black
-Write-Host "  " -ForegroundColor Cyan
-Write-Host "      ====================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Copy IP ke clipboard
-try {
-    Set-Clipboard -Value $serverIP
-    Write-Host "  [OK] IP udah di-copy ke clipboard!" -ForegroundColor Yellow
-    Write-Host "      Tinggal paste aja (Ctrl+V)" -ForegroundColor DarkGray
-} catch {
-    Write-Host "  [!] Copy manual IP di atas ya!" -ForegroundColor Yellow
-}
-
-Write-Host ""
-Write-Host "  [7] Save dan Join server!" -ForegroundColor White
-Write-Host ""
-TripleLine
-
-Write-Host ""
-DoubleLine
-Write-Host ""
-Write-Host "  =========================================" -ForegroundColor Magenta
-Write-Host "           SPECIAL THANKS TO              " -ForegroundColor Magenta
-Write-Host "  =========================================" -ForegroundColor Magenta
-Write-Host "    > Arvin (The Installer)               " -ForegroundColor Cyan
-Write-Host "    > Bang Abi                            " -ForegroundColor Cyan
-Write-Host "    > Bang Dendra                         " -ForegroundColor Cyan
-Write-Host "  =========================================" -ForegroundColor Magenta
-Write-Host ""
-Write-Host "  Have fun gaming together! " -NoNewline -ForegroundColor White
-Write-Host "[GAME ON]" -ForegroundColor Green
-Write-Host ""
-DoubleLine
-Write-Host ""
-
-Pause
+# Show form
+[void]$form.ShowDialog()
