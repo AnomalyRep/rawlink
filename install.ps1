@@ -1,70 +1,165 @@
 Clear-Host
-$Host.UI.RawUI.WindowTitle = "Minecraft Mods Installer"
+$Host.UI.RawUI.WindowTitle = "Installer Mods & Shaderpack Minecraft"
 
 # ================= CONFIG =================
-$zipUrl = "https://drive.usercontent.google.com/download?id=1eanzn3tZ5CVnPwsDs5KBt-pmoLrgMCZN&export=download&authuser=0&confirm=t&uuid=c11e27d6-a927-43dc-9b4a-79ca8885107c&at=ANTm3cwE3E-KlKCBgUYqWDSClt77%3A1766242765325"
+$modsUrl = "https://www.dropbox.com/scl/fi/b1shthyisxpnn0jk2krro/mods.zip?rlkey=rj22tq9sx8zkavamgv13czu26&st=njl5wzv0&dl=1"
+$shadersUrl = "https://www.dropbox.com/scl/fi/8zhck7t45l7n2lpnievpw/shaderpacks.zip?rlkey=ghi6x169r1so4zzv7yfz3osc2&st=5j8y5atq&dl=1"
+$serverIP = "premium-3.alstore.space:20042"
 $mcDir = "$env:APPDATA\.minecraft"
 $modsDir = "$mcDir\mods"
-$tempDir = "$env:TEMP\mc_mods_install"
-$zipPath = "$tempDir\mods.zip"
+$shadersDir = "$mcDir\shaderpacks"
+$configDir = "$mcDir\config"
+$customBrandFile = "$configDir\customclientbrand.json"
+$tempDir = "$env:TEMP\mc_install"
+$modsZip = "$tempDir\mods.zip"
+$shadersZip = "$tempDir\shaderpacks.zip"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 # ========================================
 
 function Line {
-    Write-Host "----------------------------------------" -ForegroundColor DarkGray
+    Write-Host "========================================" -ForegroundColor DarkGray
 }
 
-Line
-Write-Host " Minecraft Mods Installer" -ForegroundColor Cyan
+function DoubleLine {
+    Write-Host "========================================" -ForegroundColor Cyan
+}
+
+DoubleLine
+Write-Host "                                        " -BackgroundColor DarkBlue
+Write-Host "  INSTALLER MODS & SHADERPACK MC 1.21.11  " -ForegroundColor White -BackgroundColor DarkBlue
+Write-Host "         Server Private Edition         " -ForegroundColor Yellow -BackgroundColor DarkBlue
+Write-Host "                                        " -BackgroundColor DarkBlue
+DoubleLine
+Write-Host ""
+Write-Host "  Dipersembahkan untuk:" -ForegroundColor Magenta
+Write-Host "    🎮 Arvin (The Installer)" -ForegroundColor Cyan
+Write-Host "    🎮 Bang Abi" -ForegroundColor Cyan
+Write-Host "    🎮 Bang Dendra" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Selamat bermain di server private kami!" -ForegroundColor Yellow
 Line
 
-Write-Host "[1/5] Preparing installation..."
+Write-Host "[1/8] Nyiapin folder..." -ForegroundColor White
 if (Test-Path $tempDir) {
     Remove-Item $tempDir -Recurse -Force
 }
 New-Item $tempDir -ItemType Directory -Force | Out-Null
 New-Item $mcDir -ItemType Directory -Force | Out-Null
+New-Item $configDir -ItemType Directory -Force | Out-Null
+Write-Host "      Siap bos!" -ForegroundColor Green
 
-Write-Host "[2/5] Downloading mods pack..."
+Write-Host "[2/8] Nge-download mods pack..." -ForegroundColor White
 $wc = New-Object System.Net.WebClient
-$wc.DownloadFile($zipUrl, $zipPath)
+$wc.DownloadFile($modsUrl, $modsZip)
+Write-Host "      Mods udah ke-download!" -ForegroundColor Green
 
-Write-Host "[3/5] Backing up old mods folder..."
+Write-Host "[3/8] Backup mods lama dulu..." -ForegroundColor White
 if (Test-Path $modsDir) {
-    $backupDir = "$mcDir\mods_old_$timestamp"
-    Rename-Item $modsDir $backupDir
-    Write-Host "      Old mods moved to: mods_old_$timestamp"
+    $backupModsDir = "$mcDir\mods_backup_$timestamp"
+    Rename-Item $modsDir $backupModsDir
+    Write-Host "      Mods lama dipindahin ke: mods_backup_$timestamp" -ForegroundColor Yellow
 }
 New-Item $modsDir -ItemType Directory -Force | Out-Null
 
-Write-Host "[4/5] Extracting new mods..."
-Expand-Archive $zipPath -DestinationPath $tempDir -Force
-
-# Cek struktur ZIP dan copy sesuai
+Write-Host "[4/8] Extract & install mods..." -ForegroundColor White
+Expand-Archive $modsZip -DestinationPath $tempDir -Force
 if (Test-Path "$tempDir\mods") {
-    # Jika ada folder mods, copy isinya
     Copy-Item "$tempDir\mods\*" $modsDir -Recurse -Force
-    Write-Host "      Found mods folder, copying contents..."
+    Write-Host "      Ketemu folder mods, lagi di-copy..." -ForegroundColor Cyan
 } else {
-    # Jika tidak ada folder mods, copy semua file .jar
     $jarFiles = Get-ChildItem -Path $tempDir -Filter "*.jar" -Recurse
     if ($jarFiles.Count -gt 0) {
         $jarFiles | ForEach-Object {
             Copy-Item $_.FullName $modsDir -Force
         }
-        Write-Host "      Copied $($jarFiles.Count) mod file(s)"
+        Write-Host "      Berhasil copy $($jarFiles.Count) file mod" -ForegroundColor Cyan
     } else {
-        Write-Host "      WARNING: No .jar files found in the ZIP!" -ForegroundColor Yellow
+        Write-Host "      PERHATIAN: Gak nemu file .jar di ZIP!" -ForegroundColor Red
     }
 }
 
-Write-Host "[5/5] Cleaning up..."
+Write-Host "[5/8] Nge-download shaderpack..." -ForegroundColor White
+$wc.DownloadFile($shadersUrl, $shadersZip)
+Write-Host "      Shaderpack udah ke-download!" -ForegroundColor Green
+
+Write-Host "[6/8] Backup & install shaderpack..." -ForegroundColor White
+if (Test-Path $shadersDir) {
+    $backupShadersDir = "$mcDir\shaderpacks_backup_$timestamp"
+    Rename-Item $shadersDir $backupShadersDir
+    Write-Host "      Shaderpack lama dipindahin ke: shaderpacks_backup_$timestamp" -ForegroundColor Yellow
+}
+New-Item $shadersDir -ItemType Directory -Force | Out-Null
+
+Remove-Item "$tempDir\mods*" -Recurse -Force -ErrorAction SilentlyContinue
+Expand-Archive $shadersZip -DestinationPath $tempDir -Force
+if (Test-Path "$tempDir\shaderpacks") {
+    Copy-Item "$tempDir\shaderpacks\*" $shadersDir -Recurse -Force
+    Write-Host "      Ketemu folder shaderpacks, lagi di-copy..." -ForegroundColor Cyan
+} else {
+    $shaderFiles = Get-ChildItem -Path $tempDir -Filter "*.zip" -Recurse
+    if ($shaderFiles.Count -gt 0) {
+        $shaderFiles | ForEach-Object {
+            Copy-Item $_.FullName $shadersDir -Force
+        }
+        Write-Host "      Berhasil copy $($shaderFiles.Count) file shaderpack" -ForegroundColor Cyan
+    } else {
+        Write-Host "      PERHATIAN: Gak nemu file shader di ZIP!" -ForegroundColor Red
+    }
+}
+
+Write-Host "[7/8] Bikin custom client brand..." -ForegroundColor White
+$customBrandJson = @"
+{
+  "customBrand": "acumalaka"
+}
+"@
+Set-Content -Path $customBrandFile -Value $customBrandJson -Encoding UTF8
+Write-Host "      File customclientbrand.json udah dibuat!" -ForegroundColor Green
+
+Write-Host "[8/8] Bersihin sampah..." -ForegroundColor White
 Remove-Item $tempDir -Recurse -Force
+Write-Host "      Beres!" -ForegroundColor Green
 
 Line
-Write-Host "INSTALLATION COMPLETE" -ForegroundColor Green
-Write-Host "Mods installed successfully."
-Write-Host "Old mods have been safely preserved."
+Write-Host "INSTALASI SELESAI!" -ForegroundColor Green -BackgroundColor Black
+Write-Host ""
+Write-Host "✅ Mods & shaderpack udah ke-install semua." -ForegroundColor Cyan
+Write-Host "✅ Custom client brand 'acumalaka' udah diset." -ForegroundColor Magenta
+Write-Host "✅ File lama udah di-backup aman kok." -ForegroundColor Yellow
 Line
+
+Write-Host ""
+Write-Host "🌐 INFO SERVER PRIVATE:" -ForegroundColor Cyan -BackgroundColor Black
+Write-Host ""
+Write-Host "   Server IP: " -NoNewline -ForegroundColor White
+Write-Host "$serverIP" -ForegroundColor Green
+Write-Host ""
+
+# Copy IP ke clipboard
+try {
+    Set-Clipboard -Value $serverIP
+    Write-Host "✨ IP Server udah di-copy ke clipboard!" -ForegroundColor Yellow
+    Write-Host ""
+} catch {
+    Write-Host "⚠️  Gagal copy otomatis, tapi tenang!" -ForegroundColor Yellow
+    Write-Host ""
+}
+
+Write-Host "📝 CARA CONNECT KE SERVER:" -ForegroundColor Magenta
+Write-Host "   1. Buka Minecraft 1.21.11" -ForegroundColor White
+Write-Host "   2. Pilih 'Multiplayer'" -ForegroundColor White
+Write-Host "   3. Klik 'Add Server'" -ForegroundColor White
+Write-Host "   4. Paste IP: $serverIP" -ForegroundColor Green
+Write-Host "   5. Langsung join & main bareng!" -ForegroundColor White
+Write-Host ""
+
+DoubleLine
+Write-Host ""
+Write-Host "  Special thanks to:" -ForegroundColor Yellow
+Write-Host "  Arvin, Bang Abi & Bang Dendra" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Have fun gaming together! 🎮🔥" -ForegroundColor White
+Write-Host ""
+DoubleLine
+
 Pause
-
