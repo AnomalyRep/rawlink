@@ -62,12 +62,12 @@ if (Test-Path $modsDir) {
 New-Item $modsDir -ItemType Directory -Force | Out-Null
 
 Write-Host "[4/8] Extract & install mods..." -ForegroundColor White
-Expand-Archive $modsZip -DestinationPath $tempDir -Force
-if (Test-Path "$tempDir\mods") {
-    Copy-Item "$tempDir\mods\*" $modsDir -Recurse -Force
+Expand-Archive $modsZip -DestinationPath "$tempDir\mods_extract" -Force
+if (Test-Path "$tempDir\mods_extract\mods") {
+    Copy-Item "$tempDir\mods_extract\mods\*" $modsDir -Recurse -Force
     Write-Host "      Ketemu folder mods, lagi di-copy..." -ForegroundColor Cyan
 } else {
-    $jarFiles = Get-ChildItem -Path $tempDir -Filter "*.jar" -Recurse
+    $jarFiles = Get-ChildItem -Path "$tempDir\mods_extract" -Filter "*.jar" -Recurse
     if ($jarFiles.Count -gt 0) {
         $jarFiles | ForEach-Object {
             Copy-Item $_.FullName $modsDir -Force
@@ -78,9 +78,10 @@ if (Test-Path "$tempDir\mods") {
     }
 }
 
-# Hapus sisa extract mods supaya gak campur sama shaderpacks
-Remove-Item "$tempDir\mods" -Recurse -Force -ErrorAction SilentlyContinue
-Get-ChildItem -Path $tempDir -Filter "*.jar" -Recurse | Remove-Item -Force -ErrorAction SilentlyContinue
+# Hapus SEMUA sisa extract mods dan file mods.zip
+Write-Host "      Bersihin sisa file mods..." -ForegroundColor Cyan
+Remove-Item "$tempDir\mods_extract" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $modsZip -Force -ErrorAction SilentlyContinue
 
 Write-Host "[5/8] Nge-download shaderpack..." -ForegroundColor White
 $wc.DownloadFile($shadersUrl, $shadersZip)
@@ -95,12 +96,12 @@ if (Test-Path $shadersDir) {
 New-Item $shadersDir -ItemType Directory -Force | Out-Null
 
 Write-Host "      Lagi extract shaderpack..." -ForegroundColor Cyan
-Expand-Archive $shadersZip -DestinationPath $tempDir -Force
+Expand-Archive $shadersZip -DestinationPath "$tempDir\shaders_extract" -Force
 
 # Shaderpacks tetep dalam bentuk .zip, JANGAN di-extract lagi!
-if (Test-Path "$tempDir\shaderpacks") {
+if (Test-Path "$tempDir\shaders_extract\shaderpacks") {
     # Kalo ada folder shaderpacks, copy semua file .zip nya
-    $shaderZipFiles = Get-ChildItem -Path "$tempDir\shaderpacks" -Filter "*.zip"
+    $shaderZipFiles = Get-ChildItem -Path "$tempDir\shaders_extract\shaderpacks" -Filter "*.zip"
     if ($shaderZipFiles.Count -gt 0) {
         $shaderZipFiles | ForEach-Object {
             Copy-Item $_.FullName $shadersDir -Force
@@ -108,13 +109,13 @@ if (Test-Path "$tempDir\shaderpacks") {
         Write-Host "      Berhasil copy $($shaderZipFiles.Count) shaderpack" -ForegroundColor Cyan
     } else {
         # Kalo gak ada .zip, copy semua file aja
-        Copy-Item "$tempDir\shaderpacks\*" $shadersDir -Recurse -Force
-        $allFiles = Get-ChildItem -Path "$tempDir\shaderpacks" -File
+        Copy-Item "$tempDir\shaders_extract\shaderpacks\*" $shadersDir -Recurse -Force
+        $allFiles = Get-ChildItem -Path "$tempDir\shaders_extract\shaderpacks" -File
         Write-Host "      Berhasil copy $($allFiles.Count) file dari folder shaderpacks" -ForegroundColor Cyan
     }
 } else {
-    # Kalo gak ada folder shaderpacks, cari file .zip langsung
-    $shaderZipFiles = Get-ChildItem -Path $tempDir -Filter "*.zip" -Recurse
+    # Kalo gak ada folder shaderpacks, cari file .zip langsung (tapi BUKAN mods.zip!)
+    $shaderZipFiles = Get-ChildItem -Path "$tempDir\shaders_extract" -Filter "*.zip" -Recurse
     if ($shaderZipFiles.Count -gt 0) {
         $shaderZipFiles | ForEach-Object {
             Copy-Item $_.FullName $shadersDir -Force
