@@ -11,7 +11,6 @@ $shadersDir = "$mcDir\shaderpacks"
 $configDir = "$mcDir\config"
 $customBrandFile = "$configDir\customclientbrand.json"
 $tempDir = "$env:TEMP\mc_install"
-$tempShaders = "$tempDir\shaderpacks_temp"
 $modsZip = "$tempDir\mods.zip"
 $shadersZip = "$tempDir\shaderpacks.zip"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -45,7 +44,6 @@ if (Test-Path $tempDir) {
     Remove-Item $tempDir -Recurse -Force
 }
 New-Item $tempDir -ItemType Directory -Force | Out-Null
-New-Item $tempShaders -ItemType Directory -Force | Out-Null
 New-Item $mcDir -ItemType Directory -Force | Out-Null
 New-Item $configDir -ItemType Directory -Force | Out-Null
 Write-Host "      Siap bos!" -ForegroundColor Green
@@ -93,24 +91,21 @@ if (Test-Path $shadersDir) {
 New-Item $shadersDir -ItemType Directory -Force | Out-Null
 
 Write-Host "      Lagi extract shaderpack..." -ForegroundColor Cyan
-Expand-Archive $shadersZip -DestinationPath $tempShaders -Force
+Expand-Archive $shadersZip -DestinationPath $tempDir -Force
 
-# Cek apakah ada folder shaderpacks di dalam ZIP
-if (Test-Path "$tempShaders\shaderpacks") {
+# Logika sama persis kayak mods
+if (Test-Path "$tempDir\shaderpacks") {
     # Kalo ada folder shaderpacks, copy isinya
-    $shaderFiles = Get-ChildItem -Path "$tempShaders\shaderpacks" -File
-    if ($shaderFiles.Count -gt 0) {
-        Copy-Item "$tempShaders\shaderpacks\*" $shadersDir -Recurse -Force
-        Write-Host "      Berhasil copy $($shaderFiles.Count) file dari folder shaderpacks" -ForegroundColor Cyan
-    }
+    Copy-Item "$tempDir\shaderpacks\*" $shadersDir -Recurse -Force
+    Write-Host "      Ketemu folder shaderpacks, lagi di-copy..." -ForegroundColor Cyan
 } else {
-    # Kalo gak ada folder shaderpacks, copy semua file langsung
-    $allFiles = Get-ChildItem -Path $tempShaders -File -Recurse
-    if ($allFiles.Count -gt 0) {
-        $allFiles | ForEach-Object {
+    # Kalo gak ada folder shaderpacks, copy semua file
+    $shaderFiles = Get-ChildItem -Path $tempDir -File -Recurse
+    if ($shaderFiles.Count -gt 0) {
+        $shaderFiles | ForEach-Object {
             Copy-Item $_.FullName $shadersDir -Force
         }
-        Write-Host "      Berhasil copy $($allFiles.Count) file shaderpack" -ForegroundColor Cyan
+        Write-Host "      Berhasil copy $($shaderFiles.Count) file shaderpack" -ForegroundColor Cyan
     } else {
         Write-Host "      PERHATIAN: Gak nemu file shader di ZIP!" -ForegroundColor Red
     }
