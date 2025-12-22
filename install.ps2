@@ -55,33 +55,47 @@ Write-Host "[1/9] Nyiapin folder..." -ForegroundColor White
 if (Test-Path $tempDir) {
     Remove-Item $tempDir -Recurse -Force
 }
-New-Item $tempDir -ItemType Directory -Force : Out-Null
-New-Item $mcDir -ItemType Directory -Force : Out-Null
-New-Item $configDir -ItemType Directory -Force : Out-Null
-New-Item $shadersDir -ItemType Directory -Force : Out-Null
+New-Item $tempDir -ItemType Directory -Force | Out-Null
+New-Item $mcDir -ItemType Directory -Force | Out-Null
+New-Item $configDir -ItemType Directory -Force | Out-Null
+New-Item $shadersDir -ItemType Directory -Force | Out-Null
 Write-Host "      Siap bos!" -ForegroundColor Green
 
 Write-Host "[2/9] Nge-download Fabric Installer..." -ForegroundColor White
-$wc = New-Object System.Net.WebClient
-$wc.DownloadFile($fabricInstallerUrl, $fabricInstaller)
-Write-Host "      Fabric Installer udah ke-download!" -ForegroundColor Green
+try {
+    $wc = New-Object System.Net.WebClient
+    $wc.DownloadFile($fabricInstallerUrl, $fabricInstaller)
+    Write-Host "      Fabric Installer udah ke-download!" -ForegroundColor Green
+} catch {
+    Write-Host "      ERROR: Gagal download Fabric Installer!" -ForegroundColor Red
+    Write-Host "      $_" -ForegroundColor Red
+    Pause
+    exit
+}
 
 Write-Host "[3/9] Jalanin Fabric Installer..." -ForegroundColor White
 Write-Host ""
-Write-Host "      :====================================:" -ForegroundColor Yellow
-Write-Host "      :  PENTING! Window installer muncul  :" -ForegroundColor Yellow
-Write-Host "      :====================================:" -ForegroundColor Yellow
-Write-Host "      :  1. Pilih version: 1.21.11         :" -ForegroundColor Cyan
-Write-Host "      :  2. Klik 'Install'                 :" -ForegroundColor Cyan
-Write-Host "      :  3. Tunggu sampai selesai          :" -ForegroundColor Cyan
-Write-Host "      :====================================:" -ForegroundColor Yellow
+Write-Host "      ========================================" -ForegroundColor Yellow
+Write-Host "        PENTING! Window installer muncul     " -ForegroundColor Yellow
+Write-Host "      ========================================" -ForegroundColor Yellow
+Write-Host "        1. Pilih version: 1.21.11            " -ForegroundColor Cyan
+Write-Host "        2. Klik 'Install'                    " -ForegroundColor Cyan
+Write-Host "        3. Tunggu sampai selesai             " -ForegroundColor Cyan
+Write-Host "      ========================================" -ForegroundColor Yellow
 Write-Host ""
 Start-Process -FilePath $fabricInstaller -Wait
 Write-Host "      Fabric Installer selesai!" -ForegroundColor Green
 
 Write-Host "[4/9] Nge-download mods pack..." -ForegroundColor White
-$wc.DownloadFile($modsUrl, $modsZip)
-Write-Host "      Mods udah ke-download!" -ForegroundColor Green
+try {
+    $wc.DownloadFile($modsUrl, $modsZip)
+    Write-Host "      Mods udah ke-download!" -ForegroundColor Green
+} catch {
+    Write-Host "      ERROR: Gagal download mods!" -ForegroundColor Red
+    Write-Host "      $_" -ForegroundColor Red
+    Pause
+    exit
+}
 
 Write-Host "[5/9] Backup mods lama dulu..." -ForegroundColor White
 if (Test-Path $modsDir) {
@@ -89,24 +103,30 @@ if (Test-Path $modsDir) {
     Rename-Item $modsDir $backupModsDir
     Write-Host "      Mods lama dipindahin ke: mods_backup_$timestamp" -ForegroundColor Yellow
 }
-New-Item $modsDir -ItemType Directory -Force : Out-Null
+New-Item $modsDir -ItemType Directory -Force | Out-Null
 
 Write-Host "[6/9] Extract & install mods..." -ForegroundColor White
-Expand-Archive $modsZip -DestinationPath "$tempDir\mods_extract" -Force
-if (Test-Path "$tempDir\mods_extract\mods") {
-    Copy-Item "$tempDir\mods_extract\mods\*" $modsDir -Recurse -Force
-    $modCount = (Get-ChildItem $modsDir -Filter "*.jar").Count
-    Write-Host "      Berhasil install $modCount mods!" -ForegroundColor Cyan
-} else {
-    $jarFiles = Get-ChildItem -Path "$tempDir\mods_extract" -Filter "*.jar" -Recurse
-    if ($jarFiles.Count -gt 0) {
-        $jarFiles : ForEach-Object {
-            Copy-Item $_.FullName $modsDir -Force
-        }
-        Write-Host "      Berhasil copy $($jarFiles.Count) file mod" -ForegroundColor Cyan
+try {
+    Expand-Archive $modsZip -DestinationPath "$tempDir\mods_extract" -Force
+    
+    if (Test-Path "$tempDir\mods_extract\mods") {
+        Copy-Item "$tempDir\mods_extract\mods\*" $modsDir -Recurse -Force
+        $modCount = (Get-ChildItem $modsDir -Filter "*.jar").Count
+        Write-Host "      Berhasil install $modCount mods!" -ForegroundColor Cyan
     } else {
-        Write-Host "      PERHATIAN: Gak nemu file .jar di ZIP!" -ForegroundColor Red
+        $jarFiles = Get-ChildItem -Path "$tempDir\mods_extract" -Filter "*.jar" -Recurse
+        if ($jarFiles.Count -gt 0) {
+            $jarFiles | ForEach-Object {
+                Copy-Item $_.FullName $modsDir -Force
+            }
+            Write-Host "      Berhasil copy $($jarFiles.Count) file mod" -ForegroundColor Cyan
+        } else {
+            Write-Host "      PERHATIAN: Gak nemu file .jar di ZIP!" -ForegroundColor Red
+        }
     }
+} catch {
+    Write-Host "      ERROR: Gagal extract mods!" -ForegroundColor Red
+    Write-Host "      $_" -ForegroundColor Red
 }
 
 Write-Host "      Bersihin sisa file mods..." -ForegroundColor DarkGray
@@ -116,37 +136,42 @@ Remove-Item $modsZip -Force -ErrorAction SilentlyContinue
 Write-Host "[7/9] Backup shaderpack lama..." -ForegroundColor White
 if ((Test-Path $shadersDir) -and ((Get-ChildItem $shadersDir).Count -gt 0)) {
     $backupShadersDir = "$mcDir\shaderpacks_backup_$timestamp"
-    New-Item $backupShadersDir -ItemType Directory -Force : Out-Null
+    New-Item $backupShadersDir -ItemType Directory -Force | Out-Null
     Copy-Item "$shadersDir\*" $backupShadersDir -Recurse -Force
     Write-Host "      Shaderpack lama di-backup ke: shaderpacks_backup_$timestamp" -ForegroundColor Yellow
     # Hapus isi folder shaderpacks (tapi gak hapus foldernya)
-    Get-ChildItem $shadersDir : Remove-Item -Recurse -Force
+    Get-ChildItem $shadersDir | Remove-Item -Recurse -Force
 }
 
 Write-Host "[8/9] Download & install 4 shaderpacks..." -ForegroundColor White
 
-Write-Host "      [1/4] BSL Shaders v10.0..." -ForegroundColor Cyan
-$shader1File = "$shadersDir\BSL_v10.0.zip"
-$wc.DownloadFile($shader1Url, $shader1File)
-Write-Host "            ✓ BSL installed!" -ForegroundColor Green
+try {
+    Write-Host "      [1/4] BSL Shaders v10.0..." -ForegroundColor Cyan
+    $shader1File = "$shadersDir\BSL_v10.0.zip"
+    $wc.DownloadFile($shader1Url, $shader1File)
+    Write-Host "            [OK] BSL installed!" -ForegroundColor Green
 
-Write-Host "      [2/4] Bliss v2.1.2 Chocapic13..." -ForegroundColor Cyan
-$shader2File = "$shadersDir\Bliss_v2.1.2_-Chocapic13_Shaders_edit.zip"
-$wc.DownloadFile($shader2Url, $shader2File)
-Write-Host "            ✓ Bliss installed!" -ForegroundColor Green
+    Write-Host "      [2/4] Bliss v2.1.2 Chocapic13..." -ForegroundColor Cyan
+    $shader2File = "$shadersDir\Bliss_v2.1.2_-Chocapic13_Shaders_edit.zip"
+    $wc.DownloadFile($shader2Url, $shader2File)
+    Write-Host "            [OK] Bliss installed!" -ForegroundColor Green
 
-Write-Host "      [3/4] Complementary Reimagined r5.6.1..." -ForegroundColor Cyan
-$shader3File = "$shadersDir\ComplementaryReimagined_r5.6.1.zip"
-$wc.DownloadFile($shader3Url, $shader3File)
-Write-Host "            ✓ Complementary Reimagined installed!" -ForegroundColor Green
+    Write-Host "      [3/4] Complementary Reimagined r5.6.1..." -ForegroundColor Cyan
+    $shader3File = "$shadersDir\ComplementaryReimagined_r5.6.1.zip"
+    $wc.DownloadFile($shader3Url, $shader3File)
+    Write-Host "            [OK] Complementary Reimagined installed!" -ForegroundColor Green
 
-Write-Host "      [4/4] Complementary Unbound r5.6.1..." -ForegroundColor Cyan
-$shader4File = "$shadersDir\ComplementaryUnbound_r5.6.1.zip"
-$wc.DownloadFile($shader4Url, $shader4File)
-Write-Host "            ✓ Complementary Unbound installed!" -ForegroundColor Green
+    Write-Host "      [4/4] Complementary Unbound r5.6.1..." -ForegroundColor Cyan
+    $shader4File = "$shadersDir\ComplementaryUnbound_r5.6.1.zip"
+    $wc.DownloadFile($shader4Url, $shader4File)
+    Write-Host "            [OK] Complementary Unbound installed!" -ForegroundColor Green
 
-Write-Host ""
-Write-Host "      Total 4 shaderpacks berhasil di-install!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "      Total 4 shaderpacks berhasil di-install!" -ForegroundColor Green
+} catch {
+    Write-Host "      ERROR: Gagal download shaderpack!" -ForegroundColor Red
+    Write-Host "      $_" -ForegroundColor Red
+}
 
 Write-Host "[9/9] Bikin custom client brand..." -ForegroundColor White
 $customBrandJson = @"
@@ -154,8 +179,12 @@ $customBrandJson = @"
   "customBrand": "acumalaka"
 }
 "@
-Set-Content -Path $customBrandFile -Value $customBrandJson -Encoding UTF8
-Write-Host "      File customclientbrand.json udah dibuat!" -ForegroundColor Green
+try {
+    Set-Content -Path $customBrandFile -Value $customBrandJson -Encoding UTF8
+    Write-Host "      File customclientbrand.json udah dibuat!" -ForegroundColor Green
+} catch {
+    Write-Host "      WARNING: Gagal bikin custom brand file" -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "Bersihin sampah..." -ForegroundColor DarkGray
@@ -164,27 +193,27 @@ Write-Host "Beres!" -ForegroundColor Green
 
 Line
 Write-Host ""
-Write-Host "  :=======================================:" -ForegroundColor Green
-Write-Host "  :     INSTALASI SELESAI! ✓              :" -ForegroundColor Green
-Write-Host "  :=======================================:" -ForegroundColor Green
+Write-Host "  =========================================" -ForegroundColor Green
+Write-Host "       INSTALASI SELESAI! [OK]            " -ForegroundColor Green
+Write-Host "  =========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  [✓] Fabric Loader 1.21.11 terinstall" -ForegroundColor Cyan
-Write-Host "  [✓] Mods terinstall" -ForegroundColor Cyan
-Write-Host "  [✓] 4 Shaderpacks terinstall:" -ForegroundColor Cyan
+Write-Host "  [OK] Fabric Loader 1.21.11 terinstall" -ForegroundColor Cyan
+Write-Host "  [OK] Mods terinstall" -ForegroundColor Cyan
+Write-Host "  [OK] 4 Shaderpacks terinstall:" -ForegroundColor Cyan
 Write-Host "      - BSL v10.0" -ForegroundColor DarkGray
 Write-Host "      - Bliss v2.1.2" -ForegroundColor DarkGray
 Write-Host "      - Complementary Reimagined r5.6.1" -ForegroundColor DarkGray
 Write-Host "      - Complementary Unbound r5.6.1" -ForegroundColor DarkGray
-Write-Host "  [✓] Custom brand 'acumalaka' aktif" -ForegroundColor Cyan
-Write-Host "  [✓] File lama sudah di-backup" -ForegroundColor Cyan
+Write-Host "  [OK] Custom brand 'acumalaka' aktif" -ForegroundColor Cyan
+Write-Host "  [OK] File lama sudah di-backup" -ForegroundColor Cyan
 Write-Host ""
 Line
 
 Write-Host ""
 TripleLine
-Write-Host "  :=======================================:" -ForegroundColor Yellow
-Write-Host "  :      CARA MAIN DI SERVER              :" -ForegroundColor Yellow
-Write-Host "  :=======================================:" -ForegroundColor Yellow
+Write-Host "  =========================================" -ForegroundColor Yellow
+Write-Host "        CARA MAIN DI SERVER               " -ForegroundColor Yellow
+Write-Host "  =========================================" -ForegroundColor Yellow
 TripleLine
 Write-Host ""
 Write-Host "  [1] Buka Minecraft Launcher" -ForegroundColor White
@@ -195,17 +224,17 @@ Write-Host "  [4] Masuk ke Multiplayer" -ForegroundColor White
 Write-Host "  [5] Klik 'Add Server'" -ForegroundColor White
 Write-Host "  [6] Masukin IP server:" -ForegroundColor White
 Write-Host ""
-Write-Host "      :====================================:" -ForegroundColor Cyan
-Write-Host "      :  " -NoNewline -ForegroundColor Cyan
+Write-Host "      ====================================" -ForegroundColor Cyan
+Write-Host "        " -NoNewline -ForegroundColor Cyan
 Write-Host "$serverIP" -NoNewline -ForegroundColor Green -BackgroundColor Black
-Write-Host "  :" -ForegroundColor Cyan
-Write-Host "      :====================================:" -ForegroundColor Cyan
+Write-Host "  " -ForegroundColor Cyan
+Write-Host "      ====================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Copy IP ke clipboard
 try {
     Set-Clipboard -Value $serverIP
-    Write-Host "  [✓] IP udah di-copy ke clipboard!" -ForegroundColor Yellow
+    Write-Host "  [OK] IP udah di-copy ke clipboard!" -ForegroundColor Yellow
     Write-Host "      Tinggal paste aja (Ctrl+V)" -ForegroundColor DarkGray
 } catch {
     Write-Host "  [!] Copy manual IP di atas ya!" -ForegroundColor Yellow
@@ -219,15 +248,16 @@ TripleLine
 Write-Host ""
 DoubleLine
 Write-Host ""
-Write-Host "  :=======================================:" -ForegroundColor Magenta
-Write-Host "  :         SPECIAL THANKS TO             :" -ForegroundColor Magenta
-Write-Host "  :=======================================:" -ForegroundColor Magenta
-Write-Host "  :  • Arvin (The Installer)              :" -ForegroundColor Cyan
-Write-Host "  :  - Bang Abi                           :" -ForegroundColor Cyan
-Write-Host "  :  - Bang Dendra                        :" -ForegroundColor Cyan
-Write-Host "  :=======================================:" -ForegroundColor Magenta
+Write-Host "  =========================================" -ForegroundColor Magenta
+Write-Host "           SPECIAL THANKS TO              " -ForegroundColor Magenta
+Write-Host "  =========================================" -ForegroundColor Magenta
+Write-Host "    > Arvin (The Installer)               " -ForegroundColor Cyan
+Write-Host "    > Bang Abi                            " -ForegroundColor Cyan
+Write-Host "    > Bang Dendra                         " -ForegroundColor Cyan
+Write-Host "  =========================================" -ForegroundColor Magenta
 Write-Host ""
-Write-Host "  Have fun gaming together! 🎮" -ForegroundColor White
+Write-Host "  Have fun gaming together! " -NoNewline -ForegroundColor White
+Write-Host "[GAME ON]" -ForegroundColor Green
 Write-Host ""
 DoubleLine
 Write-Host ""
