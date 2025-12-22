@@ -11,6 +11,7 @@ $shadersDir = "$mcDir\shaderpacks"
 $configDir = "$mcDir\config"
 $customBrandFile = "$configDir\customclientbrand.json"
 $tempDir = "$env:TEMP\mc_install"
+$tempShaders = "$tempDir\shaderpacks_temp"
 $modsZip = "$tempDir\mods.zip"
 $shadersZip = "$tempDir\shaderpacks.zip"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -32,9 +33,9 @@ Write-Host "                                        " -BackgroundColor DarkBlue
 DoubleLine
 Write-Host ""
 Write-Host "  Dipersembahkan untuk:" -ForegroundColor Magenta
-Write-Host "    🎮 Arvin (The Installer)" -ForegroundColor Cyan
-Write-Host "    🎮 Bang Abi" -ForegroundColor Cyan
-Write-Host "    🎮 Bang Dendra" -ForegroundColor Cyan
+Write-Host "    [*] Arvin (The Installer)" -ForegroundColor Cyan
+Write-Host "    [*] Bang Abi" -ForegroundColor Cyan
+Write-Host "    [*] Bang Dendra" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Selamat bermain di server private kami!" -ForegroundColor Yellow
 Line
@@ -44,6 +45,7 @@ if (Test-Path $tempDir) {
     Remove-Item $tempDir -Recurse -Force
 }
 New-Item $tempDir -ItemType Directory -Force | Out-Null
+New-Item $tempShaders -ItemType Directory -Force | Out-Null
 New-Item $mcDir -ItemType Directory -Force | Out-Null
 New-Item $configDir -ItemType Directory -Force | Out-Null
 Write-Host "      Siap bos!" -ForegroundColor Green
@@ -90,18 +92,20 @@ if (Test-Path $shadersDir) {
 }
 New-Item $shadersDir -ItemType Directory -Force | Out-Null
 
-Remove-Item "$tempDir\mods*" -Recurse -Force -ErrorAction SilentlyContinue
-Expand-Archive $shadersZip -DestinationPath $tempDir -Force
-if (Test-Path "$tempDir\shaderpacks") {
-    Copy-Item "$tempDir\shaderpacks\*" $shadersDir -Recurse -Force
+Write-Host "      Lagi extract shaderpack..." -ForegroundColor Cyan
+Expand-Archive $shadersZip -DestinationPath $tempShaders -Force
+
+if (Test-Path "$tempShaders\shaderpacks") {
+    Copy-Item "$tempShaders\shaderpacks\*" $shadersDir -Recurse -Force
     Write-Host "      Ketemu folder shaderpacks, lagi di-copy..." -ForegroundColor Cyan
 } else {
-    $shaderFiles = Get-ChildItem -Path $tempDir -Filter "*.zip" -Recurse
-    if ($shaderFiles.Count -gt 0) {
-        $shaderFiles | ForEach-Object {
+    # Cari semua file .zip shaderpack dan copy langsung
+    $shaderZipFiles = Get-ChildItem -Path $tempShaders -Filter "*.zip" -Recurse
+    if ($shaderZipFiles.Count -gt 0) {
+        $shaderZipFiles | ForEach-Object {
             Copy-Item $_.FullName $shadersDir -Force
         }
-        Write-Host "      Berhasil copy $($shaderFiles.Count) file shaderpack" -ForegroundColor Cyan
+        Write-Host "      Berhasil copy $($shaderZipFiles.Count) file shaderpack (.zip)" -ForegroundColor Cyan
     } else {
         Write-Host "      PERHATIAN: Gak nemu file shader di ZIP!" -ForegroundColor Red
     }
@@ -123,13 +127,13 @@ Write-Host "      Beres!" -ForegroundColor Green
 Line
 Write-Host "INSTALASI SELESAI!" -ForegroundColor Green -BackgroundColor Black
 Write-Host ""
-Write-Host "✅ Mods & shaderpack udah ke-install semua." -ForegroundColor Cyan
-Write-Host "✅ Custom client brand 'acumalaka' udah diset." -ForegroundColor Magenta
-Write-Host "✅ File lama udah di-backup aman kok." -ForegroundColor Yellow
+Write-Host "[OK] Mods & shaderpack udah ke-install semua." -ForegroundColor Cyan
+Write-Host "[OK] Custom client brand 'acumalaka' udah diset." -ForegroundColor Magenta
+Write-Host "[OK] File lama udah di-backup aman kok." -ForegroundColor Yellow
 Line
 
 Write-Host ""
-Write-Host "🌐 INFO SERVER PRIVATE:" -ForegroundColor Cyan -BackgroundColor Black
+Write-Host "[SERVER] INFO SERVER PRIVATE:" -ForegroundColor Cyan -BackgroundColor Black
 Write-Host ""
 Write-Host "   Server IP: " -NoNewline -ForegroundColor White
 Write-Host "$serverIP" -ForegroundColor Green
@@ -138,14 +142,14 @@ Write-Host ""
 # Copy IP ke clipboard
 try {
     Set-Clipboard -Value $serverIP
-    Write-Host "✨ IP Server udah di-copy ke clipboard!" -ForegroundColor Yellow
+    Write-Host "[CLIPBOARD] IP Server udah di-copy ke clipboard!" -ForegroundColor Yellow
     Write-Host ""
 } catch {
-    Write-Host "⚠️  Gagal copy otomatis, tapi tenang!" -ForegroundColor Yellow
+    Write-Host "[INFO] Gagal copy otomatis, tapi tenang!" -ForegroundColor Yellow
     Write-Host ""
 }
 
-Write-Host "📝 CARA CONNECT KE SERVER:" -ForegroundColor Magenta
+Write-Host "[TUTORIAL] CARA CONNECT KE SERVER:" -ForegroundColor Magenta
 Write-Host "   1. Buka Minecraft 1.21.11" -ForegroundColor White
 Write-Host "   2. Pilih 'Multiplayer'" -ForegroundColor White
 Write-Host "   3. Klik 'Add Server'" -ForegroundColor White
@@ -158,7 +162,7 @@ Write-Host ""
 Write-Host "  Special thanks to:" -ForegroundColor Yellow
 Write-Host "  Arvin, Bang Abi & Bang Dendra" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Have fun gaming together! 🎮🔥" -ForegroundColor White
+Write-Host "  Have fun gaming together!" -ForegroundColor White
 Write-Host ""
 DoubleLine
 
