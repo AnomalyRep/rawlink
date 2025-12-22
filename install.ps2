@@ -1,4 +1,8 @@
 Clear-Host
+
+# Resize window
+$Host.UI.RawUI.WindowSize = New-Object System.Management.Automation.Host.Size(100, 40)
+$Host.UI.RawUI.BufferSize = New-Object System.Management.Automation.Host.Size(100, 3000)
 $Host.UI.RawUI.WindowTitle = "Installer Mods & Shaderpack Minecraft"
 
 # ================= CONFIG =================
@@ -98,28 +102,33 @@ New-Item $shadersDir -ItemType Directory -Force | Out-Null
 Write-Host "      Lagi extract shaderpack..." -ForegroundColor Cyan
 Expand-Archive $shadersZip -DestinationPath "$tempDir\shaders_extract" -Force
 
-# Cari dan copy semua shaderpack (.zip files atau folders)
+# Debug: Liat apa aja isi extractnya
+Write-Host "      [DEBUG] Checking extracted files..." -ForegroundColor Yellow
+$allExtractedItems = Get-ChildItem -Path "$tempDir\shaders_extract" -Recurse
+Write-Host "      [DEBUG] Found $($allExtractedItems.Count) total items" -ForegroundColor Yellow
+
 $copiedCount = 0
 
-# Prioritas 1: Cek folder 'shaderpacks' di dalam extract
+# Cek apakah ada folder 'shaderpacks'
 if (Test-Path "$tempDir\shaders_extract\shaderpacks") {
     Write-Host "      Ketemu folder shaderpacks, lagi copy isinya..." -ForegroundColor Cyan
-    $shaderFiles = Get-ChildItem -Path "$tempDir\shaders_extract\shaderpacks"
-    foreach ($file in $shaderFiles) {
-        Copy-Item $file.FullName $shadersDir -Recurse -Force
-        $copiedCount++
-    }
-}
-# Prioritas 2: Ambil langsung dari root extract (case kamu)
-else {
-    Write-Host "      Nyari shaderpack di root folder..." -ForegroundColor Cyan
-    # Ambil semua file .zip DAN folder (kecuali yang namanya 'shaderpacks.zip')
-    $shaderItems = Get-ChildItem -Path "$tempDir\shaders_extract" | Where-Object {
-        ($_.Extension -eq ".zip") -or ($_.PSIsContainer)
-    }
-    
+    $shaderItems = Get-ChildItem -Path "$tempDir\shaders_extract\shaderpacks"
     foreach ($item in $shaderItems) {
         Copy-Item $item.FullName $shadersDir -Recurse -Force
+        Write-Host "      -> Copied: $($item.Name)" -ForegroundColor DarkGray
+        $copiedCount++
+    }
+} else {
+    Write-Host "      Nyari shaderpack di root folder..." -ForegroundColor Cyan
+    
+    # Method simple: ambil SEMUA item di root
+    $rootItems = Get-ChildItem -Path "$tempDir\shaders_extract"
+    Write-Host "      [DEBUG] Root items count: $($rootItems.Count)" -ForegroundColor Yellow
+    
+    foreach ($item in $rootItems) {
+        # Copy semua, baik file maupun folder
+        Copy-Item $item.FullName $shadersDir -Recurse -Force
+        Write-Host "      -> Copied: $($item.Name) ($($item.GetType().Name))" -ForegroundColor DarkGray
         $copiedCount++
     }
 }
@@ -128,6 +137,9 @@ if ($copiedCount -gt 0) {
     Write-Host "      Berhasil copy $copiedCount shaderpack!" -ForegroundColor Green
 } else {
     Write-Host "      PERHATIAN: Gak nemu shaderpack yang valid!" -ForegroundColor Red
+    Write-Host "      Coba cek manual folder: $tempDir\shaders_extract" -ForegroundColor Yellow
+    Write-Host "      Tekan Enter untuk lanjut atau Ctrl+C untuk batal..." -ForegroundColor Yellow
+    Pause
 }
 
 Write-Host "[7/8] Bikin custom client brand..." -ForegroundColor White
